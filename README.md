@@ -1,27 +1,8 @@
 # Qualification_Work
-Система: 
-
-Linux MX 23, окружение KDE, основан на Debian 12.2.0-14
-Версия ядра 6.1.0-10-amd64
-
-Железо: 
-
-Intel Core I3 7100
-Nvidia 940MX
-
-Используемый редактор кода (IDE):
-
-VS code
-
-Установленные расширения: 
-
-GPU Environments v0.3.0
-Pylance v2023.9.20
-Python v2023.16.0
-Python Auto Venv v1.3.2 (для использования виртуальной машины)
-Python Environment Manager v1.2.4
-
-Так же установлены расширения для русификации
+Для запуска следует скачать имеющийся пресет данных
+https://mega.nz/file/h3cXiZKa#ptehZ2QULEv1GbRKQ26QVjDAMvrjBQGssXYLz1mbSWE
+https://mega.nz/file/tqsTXCra#QFrrYBi-UoK01tt2yeRAy9DJ322b6T2kwAQpQnRCuY4
+И поместить их в папку /RDML
 
 Настройка виртуальной машины venv. Необходимость виртуальной машины обусловлена тем, что последние версии Linux систем требуют разделение пакетного пространства для apt и pip.
 
@@ -41,29 +22,40 @@ python -m venv /home/$USER/.venv/intelintel Создается путь с ис�
 /home/$USER/.venv/intelintel/bin/pip install cifar10    \n
 /home/$USER/.venv/intelintel/bin/pip install scikit-learn   \n
 /home/$USER/.venv/intelintel/bin/pip install theano \n
+/home/$USER/.venv/intelintel/bin/pip install --upgrade theano \n
+/home/$USER/.venv/intelintel/bin/pip install -c mila-udem -c mila-udem/label/pre theano pygpu \n
+/home/$USER/.venv/intelintel/bin/pip install seaborn \n
+/home/$USER/.venv/intelintel/bin/pip install --upgrade PyQt5 \n
+
+Используемый редактор кода (IDE):
+
+VS code
+
+Установленные расширения: 
+
+GPU Environments v0.3.0
+Pylance v2023.9.20
+Python v2023.16.0
+Python Auto Venv v1.3.2 (для использования виртуальной машины)
+Python Environment Manager v1.2.4
+Jupyter
+Jupyter Cell Tags
+Jupyter Keymap
+Jupyter Notebook
+Jupyter Slide Show
+Так же установлены расширения для русификации
 
 
+Система: 
 
-Настройка драйверов CUDA не была осуществлена корректно (установлены все драйвера cuDNN, CUDA, tensorflow-gpu автоматически встроена в библиотеку tensorflow, однако библиотека в тупую не видит чип)
+Linux MX 23, окружение KDE, основан на Debian 12.2.0-14
+Версия ядра 6.1.0-10-amd64
 
-GitFlic init:
+Железо: 
 
-cd ~/home/$USER/.venv/intelintel/Qualification_Work
-git config --global user.name "paxant"
-git config --global user.email "s.iuzer2015@yandex.ru"
+Intel Core I3 7100
+Nvidia 940MX
 
-git init
-touch README.md^C
-git add README.md
-git commit -m "add README"
-git add --all
-git commit -m "add files"
-git remote add origin https://gitflic.ru/project/paxant/qualification_work.git
-git push -u origin master или git push origin master --force
 
-Username for 'https://gitflic.ru': paxant
-Password:            1
+Настройка если драйверов CUDA была осуществлена корректно (CuDNN и т. п. драйвера), то расчет должен пойти на них. Имеющееся количество эпох - 100, на заданной системе расчет одной эпохи занимает 12-13 минут.
 
-Для запуска кода необходимо в VS code открыть содержимое папки /inteintel, для исключения ошибок, связанных с подключением библиотек
-
-При создании проекта сначала требуется запустить файл RadioML_2016_encode для преобразования имеющегося файла в удобоваримый вид# Qualification_Work
