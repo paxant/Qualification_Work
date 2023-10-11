@@ -1,30 +1,28 @@
 # Импорт библиотек для работы с файлами и т.д.
-import os
+import os, random
 import pickle as lpkl
 import matplotlib.pyplot as plt
 import numpy as np 
 from sklearn.metrics import confusion_matrix
 import pickle as cPickle
-
+import seaborn as sns
 # Импорт библиотек для ИИ
 import tensorflow as tf
+import tensorflow.keras.models as models
 from tensorflow.keras.datasets import cifar10
 from tensorflow.keras import utils
 from tensorflow.keras import metrics
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, LSTM, BatchNormalization
+from tensorflow.keras import layers
+from tensorflow.keras.layers import Dense, Reshape, Flatten,Activation,Dropout ,Conv2D, MaxPooling2D, ZeroPadding2D, LSTM, BatchNormalization, GaussianNoise
 from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras import layers
+
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.layers import Reshape
-
-# os.environ["KERAS_BACKEND"] = "theano"
-# os.environ["KERAS_BACKEND"] = "tensorflow"
-# os.environ["THEANO_FLAGS"]  = "device=gpu%d"%(1)
+from tensorflow.keras.regularizers import *
 
 Project_Dir = '/home/pov/.venv/intelintel/Qualification_Work/RDML/'
 
@@ -61,8 +59,13 @@ for i in range(len(Signal_name)):                                         # со
         DATASET[(Signal_name[i], SNR)] = Signal_Range[j]
         SNR = SNR + 2
 
-# snrs, mods = map(lambda j: sorted(list(set(map(lambda x: x[j], DATASET.keys())))), [1,0])
 
+#with open("/home/pov/.venv/intelintel/Qualification_Work/RDML/RML2016.10a_dict.pkl", 'rb') as f:
+#    Xd = cPickle.load(f, encoding="latin1") 
+ 
+#snrs,mods = map(lambda j: sorted(list(set(map(lambda x: x[j], Xd.keys())))), [1,0])
+# snrs, mods = map(lambda j: sorted(list(set(map(lambda x: x[j], DATASET.keys())))), [1,0])
+ 
 # map() принимает функцию и итерацию (или несколько итераций) в качестве аргументов и возвращает итератор, 
 # который выдает преобразованные элементы по запросу. Сигнатура функции map определяется следующим образом:
 # map(function, iterable[, iterable1, iterable2,..., iterableN])
@@ -87,7 +90,6 @@ for mod in Signal_name:
            # print(i)
 # Данный цикл перебирает все значения Датасета в новый формат
 
-         
 X = np.vstack(X)                    # Возвращает вертикальное значение массива
 np.random.seed(2016)   
 
@@ -111,8 +113,9 @@ X_test =  X[test_idx]
 X_valid = X[valid_idx]              # Распределение выборок
 
 def to_onehot(yy):
-    yy1 = np.zeros([len(yy), max(yy)+1])
-    yy1[np.arange(len(yy)),yy] = 1
+    data = list(yy)
+    yy1 = np.zeros([len(data), max(data)+1])
+    yy1[np.arange(len(data)),data] = 1
     return yy1
 
 # max() находит максимальное значение среди последовательности
@@ -122,9 +125,9 @@ def to_onehot(yy):
 # заданного интервала 
 
 print(lbl[0][0])
-Y_train = to_onehot(list(map(lambda x: Signal_name.index(lbl[x][0]), train_idx)))
-Y_test = to_onehot(list(map(lambda x: Signal_name.index(lbl[x][0]), test_idx)))
-Y_valid = to_onehot(list(map(lambda x: Signal_name.index(lbl[x][0]), valid_idx)))
+Y_train = to_onehot(map(lambda x: Signal_name.index(lbl[x][0]), train_idx))
+Y_test = to_onehot(map(lambda x: Signal_name.index(lbl[x][0]), test_idx))
+Y_valid = to_onehot(map(lambda x: Signal_name.index(lbl[x][0]), valid_idx))
 
 # полечаем последовательности для обучения, проверки и теста
 
@@ -139,7 +142,7 @@ in_shp = list(X_train.shape[1:])
 print(X_train.shape, in_shp)
 classes = Signal_name
 print(classes)
-print(SNR_data)
+print(SNR)
 
 for i in range(8):
     print('Номер класса: ', np.argmax(Y_train[i]))
@@ -151,40 +154,29 @@ for i in range(8):
     plt.show()
 
 def CNN():
-    # Создание модели
+    dr = 0.1 # dropout rate (%)
     model = Sequential()
+    model.add(Reshape(in_shp + [1], input_shape=(2, 128, 1)))
+    model.add(Conv2D(256, (1,3), activation='relu', padding='same'))
+    model.add(MaxPooling2D(pool_size=(1, 2), padding='valid',  data_format=None))
+    model.add(layers.Dropout(dr))
 
-    # Входной слой Reshape
-    model.add(Reshape(in_shp + [1], input_shape=in_shp))
+    model.add(Conv2D(256, (1,3), activation='relu', padding='same'))
+    model.add(MaxPooling2D(pool_size=(1, 2), padding='valid',  data_format=None))
+    model.add(layers.Dropout(dr))
 
-    # Сверточный слой Conv2D
-    model.add(Conv2D(256, (1, 3), activation='relu'))
-
-    # Объединяющий слой MaxPooling2D
-    model.add(MaxPooling2D((1, 2)))
-
-    # Повторение сверточного слоя и объединяющего слоя
-    model.add(Conv2D(256, (1, 3), activation='relu'))
-    model.add(MaxPooling2D((1, 2)))
-
-    model.add(Conv2D(256, (1, 3), activation='relu'))
-    model.add(MaxPooling2D((1, 2)))
-
-    # Слой Flatten
+    model.add(Conv2D(256, (1,3), activation='relu', padding='same'))
+    model.add(MaxPooling2D(pool_size=(1, 2), padding='valid',  data_format=None))
+    model.add(layers.Dropout(dr))
     model.add(Flatten())
 
-    # Полносвязные слои Dense
     model.add(Dense(128, activation='relu'))
     model.add(Dense(128, activation='relu'))
     model.add(Dense(128, activation='relu'))
-
-    # Выходной слой Dense
+    model.add(BatchNormalization())
     model.add(Dense(8, activation='softmax'))
 
-    # Компиляция модели
     model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-    # Вывод структуры модели
     model.summary()
     return model
 
@@ -197,6 +189,7 @@ def ReLU(x):
 
 plt.plot(np.arange(-10, 10), [ReLU(x) for x in np.arange(-10, 10)])
 plt.title('ReLU')
+plt.show()
 
 def sigmoid(x):
     """-> 0,1 = ВЕРОЯТНОСТЬ"""
@@ -204,6 +197,7 @@ def sigmoid(x):
 
 plt.plot(np.arange(-10, 10), [sigmoid(x) for x in np.arange(-10, 10)])
 plt.title('Sigmoid')
+plt.show()
 
 def softmax(x):
     """Вычислить значения softmax для каждого набора оценок в x.
@@ -217,16 +211,6 @@ softmax(x)
 
 model = CNN()
 
-# tf.keras.callbacks.EarlyStopping(
-#   monitor="val_loss",
-#    min_delta=0,
-#    patience=15,
-#    verbose=1,
-#    mode="auto",
-#    baseline=None,
-#    restore_best_weights=False,
-#    start_from_epoch=0,
-#)
 
 # monitor: Количество, подлежащее мониторингу.
 
@@ -258,25 +242,26 @@ model = CNN()
 accuracies_All = []
 confusion_matrices_All = []
 
-ckpt_folder = "CNN_Модель/"
-ckpt_file_path = 'CNN_МОдель_ОСШ_{}'.format(SNR_data)
-model_ckpt_callback = ModelCheckpoint(filepath=ckpt_folder+ckpt_file_path,monitor='val_loss', mode='min', save_best_only=True)
+filepath = Project_Dir + 'convmodrecnets_CNN2.wts.h5'
+model_ckpt_callback = ModelCheckpoint(filepath=filepath,monitor='val_loss', mode='min', save_best_only=True)
 reduce_lr_loss = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=15, verbose=1, epsilon=1e-4, mode='min')
 batch_size=200
-filepath = Project_Dir + 'convmodrecnets_CNN2_0.5.wts.h5'
+nb_epoch = 2
 
-history = model.fit(X_train, Y_train, epochs=100,  batch_size=batch_size, callbacks = [reduce_lr_loss, model_ckpt_callback], validation_data=(X_valid, Y_valid))
+history = model.fit(X_train, Y_train, epochs=nb_epoch,  batch_size=batch_size, callbacks = [reduce_lr_loss, model_ckpt_callback], validation_data=(X_valid, Y_valid))
 model.load_weights(filepath)
 
-score = model.evaluate(X_test, Y_test, show_accuracy=True, verbose=0, batch_size=batch_size)
+# Показать простую версию исполнения
+score = model.evaluate(X_test, Y_test, verbose=0, batch_size=batch_size)
 print(score)
 
-plt.figure()
-plt.title('Эффективность обучения')
-plt.plot(history.epoch, history.history['loss'], label='потери в поезде+ошибка')
-plt.legend()
+#plt.figure()
+#plt.title('Эффективность обучения')
+#plt.plot(history.epoch, history.history['loss'], label='потери в тренировке+ошибка')
+#plt.legend()
+#plt.show()
 
-loss, acc = model.evaluate(X_test, Y_test, verbose=2)
+loss, acc = model.evaluate(X_test, Y_test, verbose=0)
 predicted_data = model.predict(X_test)
 accuracies_All.append([acc, SNR_data])
 print('точность =', acc)
@@ -289,7 +274,9 @@ confusion_matrices_All.append([results, SNR_data])
 # кросс-валидации сказать ничего не могу, пока не разобрался
 
 def plot_confusion_matrix(cm, title='Матрица запутанности', cmap=plt.cm.Blues, labels=[]):
-    plt.imshow(cm, interpolation='ближайший', cmap=cmap)
+    my_dpi=96
+    plt.figure(figsize=(800/my_dpi, 800/my_dpi), dpi=my_dpi)
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
     plt.colorbar()
     tick_marks = np.arange(len(labels))
@@ -298,6 +285,7 @@ def plot_confusion_matrix(cm, title='Матрица запутанности', c
     plt.tight_layout()
     plt.ylabel('Истинная метка')
     plt.xlabel('Прогнозируемая метка')
+    plt.show()
 
 test_Y_hat = model.predict(X_test, batch_size=200)
 conf = np.zeros([len(classes),len(classes)])
@@ -315,10 +303,11 @@ acc = {}
 for snr in SNR_data:
 
     # извлечение классов @ SNR
-    test_SNRs = map(lambda x: lbl[x][1], test_idx)
+    test_SNRs = list(map(lambda x: lbl[x][1], test_idx))
     test_X_i = X_test[np.where(np.array(test_SNRs)==snr)]
     test_Y_i = Y_test[np.where(np.array(test_SNRs)==snr)]    
-
+ 
+    #
     # оценочные классы
     test_Y_i_hat = model.predict(test_X_i)
     conf = np.zeros([len(classes),len(classes)])
@@ -329,22 +318,21 @@ for snr in SNR_data:
         conf[j,k] = conf[j,k] + 1
     for i in range(0,len(classes)):
         confnorm[i,:] = conf[i,:] / np.sum(conf[i,:])
-    plt.figure()
     plot_confusion_matrix(confnorm, labels=classes, title="Матрица смешения ConvNet (SNR=%d)"%(snr))
-    
+
     cor = np.sum(np.diag(conf))
     ncor = np.sum(conf) - cor
     print("Общая точность: ", cor / (cor+ncor))
     acc[snr] = 1.0*cor/(cor+ncor)
-
 
 # Сохранение результатов в pickle-файле для последующего построения графиков
 print(acc)
 fd = open(Project_Dir + 'results_cnn2.dat','wb')
 cPickle.dump( ("CNN2", 0.5, acc) , fd )
 
-# Plot accuracy curve
-plt.plot(SNR_data, map(lambda x: acc[x], SNR_data))
+# Построение кривой точности
+plt.plot(SNR_data, list(map(lambda x: acc[x], snrs)))
 plt.xlabel("Отношение сигнал/шум")
 plt.ylabel("Точность классификации")
 plt.title("Точность классификации CNN2 на RadioML 2016.10b")
+plt.show()

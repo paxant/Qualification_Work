@@ -100,3 +100,4 @@ for key in _Data_Sample.keys():                 #
 outfile = open('/home/pov/.venv/intelintel/Qualification_Work/RDML/'+'SNRs','wb')
 lpkl.dump(Datas,outfile)                       # Байтовая запись в файл
 outfile.close() 
+
