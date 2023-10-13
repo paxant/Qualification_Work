@@ -147,14 +147,18 @@ print(SNR)
 for i in range(8):
     print('Номер класса: ', np.argmax(Y_train[i]))
     print('Имя класса: ', classes[np.argmax(Y_train[i])])
+    plt.figure(figsize=(800/96, 800/96), dpi=96)
 # используется в Python для получения индексов максимального 
 # элемента из массива (одномерный массив) или любой строки или столбца 
 # (многомерный массив) любого заданного массива.
+    plt.xlabel("")
+    plt.ylabel("")
+    plt.title(classes[np.argmax(Y_train[i])])
     plt.imshow(X_train[i])
     plt.show()
 
 def CNN():
-    dr = 0.1 # dropout rate (%)
+    dr = 0.6 # dropout rate (%)
     model = Sequential()
     model.add(Reshape(in_shp + [1], input_shape=(2, 128, 1)))
     model.add(Conv2D(256, (1,3), activation='relu', padding='same'))
@@ -244,27 +248,27 @@ model = CNN()
 accuracies_All = []
 confusion_matrices_All = []
 
-filepath = Project_Dir + 'RDML2016B_обучуенная_модель.wts.h5'
+filepath = Project_Dir + 'RDML2016B_обучуенная_модель_2.wts.h5'
 model_ckpt_callback = ModelCheckpoint(filepath=filepath, monitor='val_loss', verbose=1, mode='auto', save_best_only=True)
 reduce_lr_loss = ReduceLROnPlateau(monitor='val_loss', patience=15, verbose=1, mode='auto')
 batch_size=200
 nb_epoch = 100
 
-#history = model.fit(X_train, Y_train, epochs=nb_epoch, shuffle = True, batch_size=batch_size, callbacks = [reduce_lr_loss, model_ckpt_callback], validation_data=(X_valid, Y_valid))
+history = model.fit(X_train, Y_train, epochs=nb_epoch, shuffle = True, batch_size=batch_size, callbacks = [reduce_lr_loss, model_ckpt_callback], validation_data=(X_valid, Y_valid))
 model.load_weights(filepath)
 
 # Показать простую версию исполнения
 score = model.evaluate(X_test, Y_test, verbose=1, batch_size=batch_size)
 print(score)
-"""
+
 plt.figure()
 plt.title('Эффективность обучения')
 plt.plot(history.epoch, history.history['loss'], label='потери в тренировке+ошибка')
 plt.plot(history.epoch, history.history['val_loss'], label='val_error')
 plt.legend()
-plt.show()"""
+plt.show()
 
-"""
+
 loss, acc = model.evaluate(X_test, Y_test, verbose=1)
 predicted_data = model.predict(X_test)
 accuracies_All.append([acc, SNR_data])
@@ -272,7 +276,7 @@ print('точность =', acc)
 res = np.argmax(predicted_data, 1)
 y_test_res = np.argmax(Y_test, 1)
 results = confusion_matrix((y_test_res+1), (res+1))
-confusion_matrices_All.append([results, SNR_data]) """
+confusion_matrices_All.append([results, SNR_data]) 
 
 # насчет кросс-валидации сказать сложно, перемешивание данных произошло, однако про степень
 # кросс-валидации сказать ничего не могу, пока не разобрался
@@ -330,8 +334,7 @@ for snr in SNR_data:
 
 # Сохранение результатов в pickle-файле для последующего построения графиков
 print(acc)
-fd = open(Project_Dir + 'results_cnn2.dat','wb')
-cPickle.dump( ("CNN2", 0.5, acc) , fd )
+
 
 # Построение кривой точности
 plt.plot(SNR_data, list(map(lambda x: acc[x], SNR_data)))
