@@ -23,6 +23,7 @@ from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import *
+from keras.utils import plot_model
 
 Project_Dir = '/home/pov/.venv/intelintel/Qualification_Work/RDML/'
 
@@ -158,7 +159,7 @@ for i in range(8):
     plt.show()
 
 def CNN():
-    dr = 0.6 # dropout rate (%)
+    dr = 0.1 # dropout rate (%)
     model = Sequential()
     model.add(Reshape(in_shp + [1], input_shape=(2, 128, 1)))
     model.add(Conv2D(256, (1,3), activation='relu', padding='same'))
@@ -253,7 +254,7 @@ model_ckpt_callback = ModelCheckpoint(filepath=filepath, monitor='val_loss', ver
 reduce_lr_loss = ReduceLROnPlateau(monitor='val_loss', patience=15, verbose=1, mode='auto')
 batch_size=200
 nb_epoch = 100
-
+plot_model(model, to_file=Project_Dir+'model.png')
 history = model.fit(X_train, Y_train, epochs=nb_epoch, shuffle = True, batch_size=batch_size, callbacks = [reduce_lr_loss, model_ckpt_callback], validation_data=(X_valid, Y_valid))
 model.load_weights(filepath)
 
