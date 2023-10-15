@@ -24,7 +24,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import *
 from keras.utils import plot_model
-
+import keras
 Project_Dir = '/home/pov/.venv/intelintel/Qualification_Work/RDML/'
 
 Signal_name = []
@@ -255,7 +255,17 @@ reduce_lr_loss = ReduceLROnPlateau(monitor='val_loss', patience=15, verbose=1, m
 batch_size=200
 nb_epoch = 100
 plot_model(model, to_file=Project_Dir+'model.png')
-history = model.fit(X_train, Y_train, epochs=nb_epoch, shuffle = True, batch_size=batch_size, callbacks = [reduce_lr_loss, model_ckpt_callback], validation_data=(X_valid, Y_valid))
+history = model.fit(X_train, 
+                    Y_train, 
+                    epochs=nb_epoch, 
+                    shuffle = True, 
+                    batch_size=batch_size, 
+                    callbacks = [
+        #params determine when to save weights to file. Happens periodically during fit.
+                    keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto'),
+                    keras.callbacks.EarlyStopping(monitor='val_loss', patience=15, verbose=1, mode='auto'), 
+                    ],
+                    validation_data=(X_valid, Y_valid))
 model.load_weights(filepath)
 
 # Показать простую версию исполнения
@@ -285,7 +295,7 @@ confusion_matrices_All.append([results, SNR_data])
 def plot_confusion_matrix(cm, title='Матрица запутанности', cmap=plt.cm.Blues, labels=[]):
     my_dpi=96
     plt.figure(figsize=(800/my_dpi, 800/my_dpi), dpi=my_dpi)
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.imshow(cm, interpolation='nearest', cmap=cmap, annot= True)
     plt.title(title)
     plt.colorbar()
     tick_marks = np.arange(len(labels))
