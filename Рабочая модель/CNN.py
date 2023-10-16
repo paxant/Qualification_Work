@@ -215,7 +215,6 @@ x = np.arange(-10, 10)
 a = softmax(x)
 print(a)
 
-model = CNN()
 
 
 # monitor: Количество, подлежащее мониторингу.
@@ -254,7 +253,8 @@ model_ckpt_callback = ModelCheckpoint(filepath=filepath, monitor='val_loss', ver
 reduce_lr_loss = ReduceLROnPlateau(monitor='val_loss', patience=15, verbose=1, mode='auto')
 batch_size=200
 nb_epoch = 100
-plot_model(model, to_file=Project_Dir+'model.png')
+
+
 history = model.fit(X_train, 
                     Y_train, 
                     epochs=nb_epoch, 

@@ -5,6 +5,8 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 import pickle as cPickle
 import seaborn as sns
+from scikeras.wrappers import KerasClassifier
+from sklearn.model_selection import cross_val_score
 import tensorflow as tf
 import tensorflow.keras.models as models
 from tensorflow.keras.datasets import cifar10
@@ -21,6 +23,8 @@ from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import *
+from sklearn.metrics import mean_squared_error
+
 import keras
 # Load the dataset ...
 # You will need to separately download or generate this file from
@@ -73,30 +77,31 @@ Y_test = to_onehot(map(lambda x: mods.index(lbl[x][0]), test_idx))
 in_shp = list(X_train.shape[1:])
 print (X_train.shape, in_shp)
 classes = mods
+def create_model():
+    dr = 0.1 # dropout rate (%)
+    model = Sequential()
+    model.add(Reshape(in_shp + [1], input_shape=(2, 128, 1)))
+    model.add(Conv2D(256, (1,3), activation='relu', padding='same'))
+    model.add(MaxPooling2D(pool_size=(1, 2), padding='valid',  data_format=None))
+    model.add(layers.Dropout(dr))
 
-dr = 0.1 # dropout rate (%)
-model = Sequential()
-model.add(Reshape(in_shp + [1], input_shape=(2, 128, 1)))
-model.add(Conv2D(256, (1,3), activation='relu', padding='same'))
-model.add(MaxPooling2D(pool_size=(1, 2), padding='valid',  data_format=None))
-model.add(layers.Dropout(dr))
+    model.add(Conv2D(256, (1,3), activation='relu', padding='same'))
+    model.add(MaxPooling2D(pool_size=(1, 2), padding='valid',  data_format=None))
+    model.add(layers.Dropout(dr))
 
-model.add(Conv2D(256, (1,3), activation='relu', padding='same'))
-model.add(MaxPooling2D(pool_size=(1, 2), padding='valid',  data_format=None))
-model.add(layers.Dropout(dr))
+    model.add(Conv2D(256, (1,3), activation='relu', padding='same'))
+    model.add(MaxPooling2D(pool_size=(1, 2), padding='valid',  data_format=None))
+    model.add(layers.Dropout(dr))
+    model.add(Flatten())
 
-model.add(Conv2D(256, (1,3), activation='relu', padding='same'))
-model.add(MaxPooling2D(pool_size=(1, 2), padding='valid',  data_format=None))
-model.add(layers.Dropout(dr))
-model.add(Flatten())
+    model.add(Dense(128, activation='relu'))
+    model.add(Dense(128, activation='relu'))
+    model.add(Dense(128, activation='relu'))
+    model.add(BatchNormalization())
+    model.add(Dense(8, activation='softmax'))
 
-model.add(Dense(128, activation='relu'))
-model.add(Dense(128, activation='relu'))
-model.add(Dense(128, activation='relu'))
-model.add(BatchNormalization())
-model.add(Dense(8, activation='softmax'))
-
-model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    return model
 
 nb_epoch = 100     # number of epochs to train on
 batch_size = 200  # training batch size
@@ -107,30 +112,29 @@ batch_size = 200  # training batch size
 filepath = '/home/pov/.venv/intelintel/Qualification_Work/RDML/convmodrecnets_CNN2_0.5.wts.h5'
 #netron can open the h5 and show architecture of the neural network
 
-history = model.fit(X_train,
-    Y_train,
-    batch_size=batch_size,
-    epochs=nb_epoch,
-    verbose=1,
-    shuffle = True,
-    validation_data=(X_test, Y_test),
-    callbacks = [
+model = KerasClassifier(build_fn=create_model, 
+                        epochs=nb_epoch, 
+                        batch_size=batch_size, 
+                        shuffle=True,
+                        callbacks = [
         #params determine when to save weights to file. Happens periodically during fit.
-        keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto'),
-        keras.callbacks.EarlyStopping(monitor='val_loss', patience=15, verbose=1, mode='auto')
-    ])
-# we re-load the best weights once training is finished. best means lowest loss values for test/validation
+        keras.callbacks.ModelCheckpoint(filepath, monitor='loss', verbose=1, save_best_only=True, mode='auto'),
+        keras.callbacks.EarlyStopping(monitor='loss', patience=15, verbose=1, mode='auto')])
+cv_mse = []
+score = cross_val_score(model, X_train, Y_train, cv=10)
 model.load_weights(filepath)
+
+print (score)
 
 score = model.evaluate(X_test, Y_test, verbose=1, batch_size=batch_size)
 print (score)
-
+"""
 plt.figure()
 plt.title('Training performance')
 plt.plot(history.epoch, history.history['loss'], label='train loss+error')
 plt.plot(history.epoch, history.history['val_loss'], label='val_error')
 plt.legend()
-plt.show()
+plt.show()"""
 
 def plot_confusion_matrix(cm, title='Confusion matrix', cmap=plt.cm.Reds, labels=[]):
     #plt.cm.Reds - color shades to use, Reds, Blues, etc.
@@ -182,7 +186,7 @@ for snr in snrs:
     # extract classes @ SNR
     #changed map to list as part of upgrade from python2
     test_SNRs = list(map(lambda x: lbl[x][1], test_idx))
-    test_X_i = X_test[np.where(np.array(test_SNRs)==snr)]
+    test_X_i = X_test[np.wh6ere(np.array(test_SNRs)==snr)]
     test_Y_i = Y_test[np.where(np.array(test_SNRs)==snr)]    
  
     # estimate classes
