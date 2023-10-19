@@ -18,13 +18,13 @@ from tensorflow.keras.layers import Dense, Reshape, Flatten,Activation,Dropout, 
 from tensorflow.keras.losses import categorical_crossentropy
 from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-
+from sklearn.model_selection import KFold
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.regularizers import *
 from sklearn.metrics import mean_squared_error
-
+from sklearn.model_selection import StratifiedKFold
 import keras
 # Load the dataset ...
 # You will need to separately download or generate this file from
@@ -56,27 +56,6 @@ X = np.vstack(X)
 # Partition the data
 #  into training and test sets of the form we can train/test on
 #  while keeping SNR and Mod labels handy for each
-np.random.seed(2016)
-n_examples = X.shape[0]
-# looks like taking half the samples for training
-n_train = int(n_examples * 0.5)
-train_idx = np.random.choice(range(0,n_examples), size=n_train, replace=False)
-test_idx = list(set(range(0,n_examples))-set(train_idx))
-X_train = X[train_idx]
-X_test =  X[test_idx]
-def to_onehot(yy):
- 
-    data = list(yy)
- 
-    yy1 = np.zeros([len(data), max(data)+1])
-    yy1[np.arange(len(data)),data] = 1
-    return yy1
-Y_train = to_onehot(map(lambda x: mods.index(lbl[x][0]), train_idx))
-Y_test = to_onehot(map(lambda x: mods.index(lbl[x][0]), test_idx))
-
-in_shp = list(X_train.shape[1:])
-print (X_train.shape, in_shp)
-classes = mods
 def create_model():
     dr = 0.1 # dropout rate (%)
     model = Sequential()
@@ -100,123 +79,90 @@ def create_model():
     model.add(BatchNormalization())
     model.add(Dense(8, activation='softmax'))
 
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.compile(loss=keras.losses.CategoricalCrossentropy(from_logits=True), optimizer='adam', metrics=['accuracy'])
     return model
 
-nb_epoch = 100     # number of epochs to train on
+nb_epoch = 200     # number of epochs to train on
 batch_size = 200  # training batch size
 
 # perform training ...
 #   - call the main training loop in keras for our network+dataset
 #weight written to jupyter directory (where notebook is). saved in hdf5 format.
-filepath = '/home/pov/.venv/intelintel/Qualification_Work/RDML/convmodrecnets_CNN2_0.5.wts.h5'
+filepath = '/home/pov/.venv/intelintel/Qualification_Work/RDML/'
 #netron can open the h5 and show architecture of the neural network
 
-model = KerasClassifier(build_fn=create_model, 
-                        epochs=nb_epoch, 
-                        batch_size=batch_size, 
-                        shuffle=True,
-                        callbacks = [
-        #params determine when to save weights to file. Happens periodically during fit.
-        keras.callbacks.ModelCheckpoint(filepath, monitor='loss', verbose=1, save_best_only=True, mode='auto'),
-        keras.callbacks.EarlyStopping(monitor='loss', patience=15, verbose=1, mode='auto')])
-cv_mse = []
-score = cross_val_score(model, X_train, Y_train, cv=10)
-model.load_weights(filepath)
+n_examples = X.shape[0]
+# looks like taking half the samples for training
 
-print (score)
+N_DATAS = int(n_examples * 1)
+DATAS_idx = np.random.choice(range(0,n_examples), size=N_DATAS, replace=False)
+X_DATAS = X[DATAS_idx]
 
-score = model.evaluate(X_test, Y_test, verbose=1, batch_size=batch_size)
-print (score)
-"""
-plt.figure()
-plt.title('Training performance')
-plt.plot(history.epoch, history.history['loss'], label='train loss+error')
-plt.plot(history.epoch, history.history['val_loss'], label='val_error')
-plt.legend()
-plt.show()"""
+def to_onehot(yy):
+    data = list(yy)
+    yy1 = np.zeros([len(data), max(data)+1])
+    yy1[np.arange(len(data)),data] = 1
+    return yy1
 
-def plot_confusion_matrix(cm, title='Confusion matrix', cmap=plt.cm.Reds, labels=[]):
-    #plt.cm.Reds - color shades to use, Reds, Blues, etc.
-    # made the image bigger- 800x800
-    my_dpi=96
-    plt.figure(figsize=(800/my_dpi, 800/my_dpi), dpi=my_dpi)
-    #key call- data, how to interpolate thefp vakues, color map
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
-    #adds a color legend to right hand side. Shows values for different shadings of blue.
-    plt.colorbar()
-    # create tickmarks with count = number of labels
-    tick_marks = np.arange(len(labels))
-    plt.xticks(tick_marks, labels, rotation=45)
-    plt.yticks(tick_marks, labels)
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
+Y_DATAS = to_onehot(map(lambda x: mods.index(lbl[x][0]), DATAS_idx))
+
+in_shp = list(X_DATAS.shape[1:])
+
+kfold = KFold(n_splits=10, shuffle=True, random_state=42)
+check_model = int(0)
+for train, test_valid in kfold.split(X_DATAS, Y_DATAS, groups=None):
+    model = create_model()
+    
+    file_Name_Train_Dataset = filepath + "Train_Dataset_CNN_10_Fold_cross_valid_" + str(check_model)
+    file_Name_Test_Dataset = filepath + "Test_Dataset_CNN_10_Fold_cross_valid_" + str(check_model)
+    file_Name_CNN = filepath + "CNN_Model_10_fold_cross_vaild_" + str(check_model) + ".wts.h5"
+    file_Name_CNN_history = filepath + "CNN_Model_10_fold_cross_vaild_history_" + str(check_model)
+
+    Dataset_train = {}
+    Dataset_train[('X')] = X_DATAS[train]
+    Dataset_train[('Y')] = Y_DATAS[train]
+
+    outfile = open(file_Name_Train_Dataset,'wb')      # Вывод в файл датасета
+    lpkl.dump(Dataset_train,outfile)                       # Байтовая запись в файл
+    outfile.close() 
+
+    Dataset_test = {}
+    Dataset_test[('X')] = X_DATAS[test_valid]
+    Dataset_test[('Y')] = Y_DATAS[test_valid]
+
+    outfile = open(file_Name_Test_Dataset,'wb')      # Вывод в файл датасета
+    lpkl.dump(Dataset_test, outfile)                       # Байтовая запись в файл
+    outfile.close() 
+
+    history = model.fit(X_DATAS[train],
+            Y_DATAS[train],
+            batch_size=batch_size,
+            epochs=nb_epoch,
+            verbose=1,
+            shuffle = True,
+            validation_data=(X_DATAS[test_valid], Y_DATAS[test_valid]),
+            callbacks = [
+                #params determine when to save weights to file. Happens periodically during fit.
+                keras.callbacks.ModelCheckpoint(file_Name_CNN, monitor='val_loss', verbose=1, save_best_only=True, mode='auto'),
+                keras.callbacks.EarlyStopping(monitor='val_loss', patience=15, verbose=1, mode='auto')
+            ])
+    
+    score = model.evaluate(X_DATAS[test_valid], Y_DATAS[test_valid], verbose=1, batch_size=batch_size)
+    print (score)
+
+    plt.figure()
+    plt.title('Training performance' + str(check_model))
+    plt.plot(history.epoch, history.history['loss'], label='train loss+error')
+    plt.plot(history.epoch, history.history['val_loss'], label='val_error')
+    plt.legend()
     plt.show()
-#pass in X_test value and it predicts test_Y_hat
-test_Y_hat = model.predict(X_test, batch_size=batch_size, verbose = 1)
-#fill matrices with zeros
-conf = np.zeros([len(classes),len(classes)])
-#normalize confusion matrix
-confnorm = np.zeros([len(classes),len(classes)])
- 
-#this puts all the data into an 11 x 11 matrix for plotting.
-for i in range(0,X_test.shape[0]):
-    # j is first value in list
-    j = list(Y_test[i,:]).index(1)
-    #np.argmax gives the index of the max value in the array, assuming flattened into single vector
-    k = int(np.argmax(test_Y_hat[i,:]))
-    #why add 1 to each value??
-    conf[j,k] = conf[j,k] + 1
- 
-#takes the data to plot and normalizes it
-for i in range(0,len(classes)):
-    confnorm[i,:] = conf[i,:] / np.sum(conf[i,:])
-print (confnorm)
-print (classes)
-plot_confusion_matrix(confnorm, labels=classes)
 
-# Plot confusion matrix
-acc = {}
- 
-#this create a new confusion matrix for each SNR
-for snr in snrs:
- 
-    # extract classes @ SNR
-    #changed map to list as part of upgrade from python2
-    test_SNRs = list(map(lambda x: lbl[x][1], test_idx))
-    test_X_i = X_test[np.wh6ere(np.array(test_SNRs)==snr)]
-    test_Y_i = Y_test[np.where(np.array(test_SNRs)==snr)]    
- 
-    # estimate classes
-    test_Y_i_hat = model.predict(test_X_i)
- 
-    #create 11x11 matrix full of zeroes
-    conf = np.zeros([len(classes),len(classes)])
-    confnorm = np.zeros([len(classes),len(classes)])
-    for i in range(0,test_X_i.shape[0]):
-        j = list(test_Y_i[i,:]).index(1)
-        k = int(np.argmax(test_Y_i_hat[i,:]))
-        conf[j,k] = conf[j,k] + 1
- 
-    #normalize 0 .. 1
-    for i in range(0,len(classes)):
-        confnorm[i,:] = conf[i,:] / np.sum(conf[i,:])
-    plot_confusion_matrix(confnorm, labels=classes, title="ConvNet Confusion Matrix (SNR=%d)"%(snr))
- 
-    cor = np.sum(np.diag(conf))
-    ncor = np.sum(conf) - cor
-    acc[snr] = 1.0*cor/(cor+ncor)
+    outfile = open(file_Name_CNN_history,'wb')      # Вывод в файл датасета
+    lpkl.dump(history, outfile)                       # Байтовая запись в файл
+    outfile.close()
 
+    check_model = check_model + 1
+    del history
+    del model
 
-# Save results to a pickle file for plotting later
-print (acc)
-# Plot accuracy curve
-# map function produces generator in python3 which does not work with plt. Need a list.
-# list(map(chr,[66,53,0,94]))
-plt.plot(snrs, list(map(lambda x: acc[x], snrs)))
-plt.xlabel("Signal to Noise Ratio")
-plt.ylabel("Classification Accuracy")
-plt.title("CNN2 Classification Accuracy on RadioML 2016.10 Alpha")
 import pandas

@@ -27,6 +27,8 @@ WBFM
 RML2016.10a_dict.pkl
 RML2016.10b.dat
 RDML2016B_обучуенная_модель_2.wts.h5
+Train_Dataset_CNN_10_Fold_cross_valid_0
+Test_Dataset_CNN_10_Fold_cross_valid_0
 # Игнорируем директорию в любой директории проекта
 # node_modules/
 
