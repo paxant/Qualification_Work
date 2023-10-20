@@ -29,6 +29,9 @@ RML2016.10b.dat
 RDML2016B_обучуенная_модель_2.wts.h5
 Train_Dataset_CNN_10_Fold_cross_valid_0
 Test_Dataset_CNN_10_Fold_cross_valid_0
+CNN_Model_10_fold_cross_vaild_history_*
+Test_Dataset_CNN_10_Fold_cross_valid_*
+Train_Dataset_CNN_10_Fold_cross_valid_*
 # Игнорируем директорию в любой директории проекта
 # node_modules/
 
