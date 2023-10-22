@@ -32,6 +32,7 @@ Test_Dataset_CNN_10_Fold_cross_valid_0
 CNN_Model_10_fold_cross_vaild_history_*
 Test_Dataset_CNN_10_Fold_cross_valid_*
 Train_Dataset_CNN_10_Fold_cross_valid_*
+classes
 # Игнорируем директорию в любой директории проекта
 # node_modules/
 

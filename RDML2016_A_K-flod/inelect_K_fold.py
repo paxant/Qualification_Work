@@ -108,6 +108,8 @@ Y_DATAS = to_onehot(map(lambda x: mods.index(lbl[x][0]), DATAS_idx))
 
 in_shp = list(X_DATAS.shape[1:])
 
+print(in_shp)
+
 kfold = KFold(n_splits=10, shuffle=True, random_state=42)
 check_model = int(0)
 for train, test_valid in kfold.split(X_DATAS, Y_DATAS, groups=None):

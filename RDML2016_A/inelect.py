@@ -74,6 +74,11 @@ in_shp = list(X_train.shape[1:])
 print (X_train.shape, in_shp)
 classes = mods
 
+outfile = open('/home/pov/.venv/intelintel/Qualification_Work/RDML/classes','wb')      # Вывод в файл датасета
+lpkl.dump(classes, outfile)                       # Байтовая запись в файл
+outfile.close()
+
+
 dr = 0.1 # dropout rate (%)
 model = Sequential()
 model.add(Reshape(in_shp + [1], input_shape=(2, 128, 1)))
@@ -104,9 +109,9 @@ batch_size = 200  # training batch size
 # perform training ...
 #   - call the main training loop in keras for our network+dataset
 #weight written to jupyter directory (where notebook is). saved in hdf5 format.
-filepath = '/home/pov/.venv/intelintel/Qualification_Work/RDML/convmodrecnets_CNN2_0.5.wts.h5'
+filepath = '/home/pov/.venv/intelintel/Qualification_Work/RDML2016_A/RDML2016_trained_model.h5'
 #netron can open the h5 and show architecture of the neural network
-
+"""
 history = model.fit(X_train,
     Y_train,
     batch_size=batch_size,
@@ -118,20 +123,20 @@ history = model.fit(X_train,
         #params determine when to save weights to file. Happens periodically during fit.
         keras.callbacks.ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, mode='auto'),
         keras.callbacks.EarlyStopping(monitor='val_loss', patience=15, verbose=1, mode='auto')
-    ])
+    ])"""
 # we re-load the best weights once training is finished. best means lowest loss values for test/validation
 model.load_weights(filepath)
 
 score = model.evaluate(X_test, Y_test, verbose=1, batch_size=batch_size)
 print (score)
-
+"""
 plt.figure()
 plt.title('Training performance')
 plt.plot(history.epoch, history.history['loss'], label='train loss+error')
 plt.plot(history.epoch, history.history['val_loss'], label='val_error')
 plt.legend()
 plt.show()
-
+"""
 def plot_confusion_matrix(cm, title='Confusion matrix', cmap=plt.cm.Reds, labels=[]):
     #plt.cm.Reds - color shades to use, Reds, Blues, etc.
     # made the image bigger- 800x800
@@ -181,6 +186,7 @@ for snr in snrs:
  
     # extract classes @ SNR
     #changed map to list as part of upgrade from python2
+    
     test_SNRs = list(map(lambda x: lbl[x][1], test_idx))
     test_X_i = X_test[np.where(np.array(test_SNRs)==snr)]
     test_Y_i = Y_test[np.where(np.array(test_SNRs)==snr)]    
